@@ -11,11 +11,48 @@ import { Separator } from "@/components/ui/separator"
 import { Send, Download, Trash2, Code, Terminal } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { MessageBubble } from "@/components/message-bubble"
-
+import type { Message } from "ai/react";
 export default function AICodeAgent() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    api: "/api/chat",
+  const { messages, input, handleInputChange, setMessages , setInput } = useChat({
+    api: "",
+  // onResponse: async (res) => {
+  //   const json = await res.json();
+  //   console.log("📦 Assistant Response:", json);
+  // },
   })
+  const [isLoading , setIsLoading] = useState(false);
+  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const userMessage : Message= {
+    id: Date.now().toString(),
+    role: "user",
+    content: input,
+  };
+  setMessages((prev) => [...prev, userMessage]);
+  setInput("");
+  setIsLoading(true);
+  
+    try {
+    const res = await fetch("http://localhost:3001/api/agent/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [...messages, userMessage] }),
+    });
+
+    const json = await res.json();
+
+    const assistantMessage: Message = {
+      id: Date.now().toString(),
+      role: "assistant",
+      content: json.content,
+    };
+
+    setMessages((prev) => [...prev, assistantMessage]);
+    setIsLoading(false);
+  } catch (err) {
+    console.error(err);
+  }
+  }
 
   const [copied, setCopied] = useState<string | null>(null)
 
@@ -75,9 +112,9 @@ export default function AICodeAgent() {
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    AI Code Agent
+                    Code Genie
                   </CardTitle>
-                  <p className="text-sm text-slate-400">Convert natural language to code with AI</p>
+                  <p className="text-sm text-slate-400">Automate code creation from natural language using AI</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -108,7 +145,7 @@ export default function AICodeAgent() {
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-white">Welcome to AI Code Agent</h3>
                     <p className="text-gray-400 max-w-md">
-                      Describe what you want to build in natural language, and I'll generate the code for you.
+                      Describe what you want to build in natural language, and I'll write the code for you.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
