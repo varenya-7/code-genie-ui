@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState , useEffect } from "react"
 import { useChat } from "ai/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,43 @@ export default function AICodeAgent() {
   // },
   })
   const [isLoading , setIsLoading] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+useEffect(() => {
+  const socket = new WebSocket("ws://localhost:3001");
+  setWs(socket);
+
+  socket.onopen = () => {
+    console.log("WebSocket connected");
+  };
+
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("Incoming message:", data);
+
+    const assistantMessage: Message = {
+      id: Date.now().toString(),
+      role: "assistant",
+      content: data.content,
+    };
+
+    setMessages((prev) => [...prev, assistantMessage]);
+    setIsLoading(false);
+  };
+
+  socket.onerror = (err) => {
+    console.error("WebSocket error", err);
+  };
+
+  socket.onclose = () => {
+    console.log("WebSocket disconnected");
+  };
+
+  return () => {
+    socket.close();
+  };
+}, []);
+
   const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const userMessage : Message= {
@@ -32,26 +69,40 @@ export default function AICodeAgent() {
   setInput("");
   setIsLoading(true);
   
-    try {
-    const res = await fetch("http://localhost:3001/api/agent/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [...messages, userMessage] }),
-    });
-
-    const json = await res.json();
-
-    const assistantMessage: Message = {
-      id: Date.now().toString(),
-      role: "assistant",
-      content: json.content,
-    };
-
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsLoading(false);
-  } catch (err) {
-    console.error(err);
+  if(ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({messages : [...messages , userMessage]}));
   }
+  else{
+    console.error("WebSocket is not connected");
+    toast({
+      title: "Connection Error",
+      description: "WebSocket is not connected. Please try again later.",
+      variant: "destructive",
+    });
+    setIsLoading(false);
+    return;
+  }
+
+  //   try {
+  //   const res = await fetch("http://localhost:3001/api/agent/ask", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ messages: [...messages, userMessage] }),
+  //   });
+
+  //   const json = await res.json();
+
+  //   const assistantMessage: Message = {
+  //     id: Date.now().toString(),
+  //     role: "assistant",
+  //     content: json.content,
+  //   };
+
+  //   setMessages((prev) => [...prev, assistantMessage]);
+  //   setIsLoading(false);
+  // } catch (err) {
+  //   console.error(err);
+  // }
   }
 
   const [copied, setCopied] = useState<string | null>(null)

@@ -17,9 +17,10 @@ export function MessageBubble({ message, onCopy, copied }: MessageBubbleProps) {
   const isUser = message.role === "user"
 
   // Simple code detection - looks for code blocks or common programming patterns
-  const hasCode =
-    message.content.includes("```") ||
-    /\b(function|def|class|import|const|let|var|if|for|while)\b/.test(message.content)
+const hasCode =
+  message.content?.includes("```") ||
+  /\b(function|def|class|import|const|let|var|if|for|while)\b/.test(message.content || "");
+
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
