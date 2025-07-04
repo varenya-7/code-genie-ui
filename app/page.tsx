@@ -23,6 +23,7 @@ export default function AICodeAgent() {
   const [isLoading , setIsLoading] = useState(false);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
+
 useEffect(() => {
   const socket = new WebSocket("ws://localhost:3001");
   setWs(socket);
@@ -70,7 +71,9 @@ useEffect(() => {
   setIsLoading(true);
   
   if(ws && ws.readyState === WebSocket.OPEN) {
+    console.log("Sending message to WebSocket server:", {messages : [...messages , userMessage]});
     ws.send(JSON.stringify({messages : [...messages , userMessage]}));
+    console.log("Messages" , messages);  
   }
   else{
     console.error("WebSocket is not connected");
@@ -151,6 +154,7 @@ useEffect(() => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-black">
       <div className="container mx-auto p-4 h-screen flex flex-col">
         {/* Header */}
@@ -255,5 +259,6 @@ useEffect(() => {
         </Card>
       </div>
     </div>
+    </>
   )
 }
