@@ -22,6 +22,7 @@ export default function AICodeAgent() {
   })
   const [isLoading , setIsLoading] = useState(false);
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [streamedMessage, setStreamedMessage] = useState<any | null>(null);
 
 
 useEffect(() => {
@@ -36,14 +37,30 @@ useEffect(() => {
     const data = JSON.parse(event.data);
     console.log("Incoming message:", data);
 
-    const assistantMessage: Message = {
-      id: Date.now().toString(),
+    // const assistantMessage: any = {
+    //   id: Date.now().toString(),
+    //   role: "assistant",
+    //   content: data.content,
+    // };
+    setStreamedMessage((prev : any) => {
+    const newContent = prev?.content
+      ? `${prev.content}\n${data.content}`
+      : data.content;
+
+      const updatedMessage = {
+      id: "streamed-assistant",
       role: "assistant",
-      content: data.content,
+      content: newContent,
     };
 
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsLoading(false);
+    if (data.step === "output") {
+      setMessages((prev : any) => [...prev, updatedMessage]);
+      setIsLoading(false);
+      return null; // Clear streamedMessage
+    }
+
+    return updatedMessage;
+  });
   };
 
   socket.onerror = (err) => {
@@ -219,17 +236,36 @@ useEffect(() => {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {messages.map((message, index) => (
-                    <MessageBubble key={message.id} message={message} onCopy={copyToClipboard} copied={copied} />
-                  ))}
-                  {isLoading && (
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span className="text-sm">AI is thinking...</span>
-                    </div>
-                  )}
-                </div>
+<div className="space-y-6">
+  {messages.map((message) => (
+    <MessageBubble
+      key={message.id}
+      message={message}
+      onCopy={copyToClipboard}
+      copied={copied}
+    />
+  ))}
+
+  {/* ✅ show streamedMessage separately (temporary + unique key) */}
+  {streamedMessage && (
+    <MessageBubble
+      key="streaming"
+      message={streamedMessage}
+      onCopy={copyToClipboard}
+      copied={copied}
+      isStreaming
+    />
+  )}
+
+  {isLoading && (
+    <div className="flex items-center gap-2 text-gray-400">
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+      <span className="text-sm">AI is thinking...</span>
+    </div>
+  )}
+</div>
+
+
               )}
             </ScrollArea>
 

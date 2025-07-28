@@ -11,9 +11,10 @@ interface MessageBubbleProps {
   message: Message
   onCopy: (text: string, id: string) => void
   copied: string | null
+  isStreaming?: boolean;
 }
 
-export function MessageBubble({ message, onCopy, copied }: MessageBubbleProps) {
+export function MessageBubble({ message, onCopy, copied , isStreaming = false }: MessageBubbleProps) {
   const isUser = message.role === "user"
 
   // Simple code detection - looks for code blocks or common programming patterns
@@ -52,6 +53,10 @@ const hasCode =
           ) : (
             <div className="space-y-2">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              
+              {isStreaming && !isUser && (
+                <p className="text-xs text-gray-400 italic">Assistant is responding...</p>
+              )}
               {!isUser && (
                 <div className="flex justify-end">
                   <Button
